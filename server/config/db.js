@@ -15,6 +15,9 @@ const pool = mysql.createPool({
 // Add a listener for the 'connection' event
 pool.on("connection", (connection) => {
   logger.info("Database connected");
+  connection.on("end", () => {
+    console.log("Database connection released");
+  });
 });
 
 // Add a listener for the 'error' event

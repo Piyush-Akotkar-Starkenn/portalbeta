@@ -1,4 +1,5 @@
 const mqtt = require("mqtt");
+const logger = require("../logger");
 require("dotenv").config();
 
 // MQTT creds
@@ -22,9 +23,9 @@ const client = mqtt.connect(connectUrl, {
 function endConnection() {
   if (client && client.connected) {
     client.end();
-    console.log("Disconnected from MQTT broker");
+    logger.info("Disconnected from MQTT broker");
   } else {
-    console.error("MQTT client is not connected");
+    logger.error("MQTT client is not connected");
   }
 }
 
