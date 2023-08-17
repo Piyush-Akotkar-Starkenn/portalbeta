@@ -45,7 +45,6 @@ const storeJsonInDatabase = async (validatedJson) => {
     }
 
     const tripdata = [
-      validatedJson.trip_id,
       validatedJson.device_id,
       vehicleData[0].vehicle_uuid,
       validatedJson.event,
@@ -75,7 +74,7 @@ const storeJsonInDatabase = async (validatedJson) => {
     await createTripSummary(tripSummaryData, vehicle_uuid);
 
     await connection.query(
-      "INSERT INTO tripdata (trip_id, device_id, vehicle_uuid, event, message, timestamp, igs, lat, lng, spd, jsondata, created_at) VALUES (?, NOW())",
+      "INSERT INTO tripdata (device_id, vehicle_uuid, event, message, timestamp, igs, lat, lng, spd, jsondata, created_at) VALUES (?, NOW())",
       [tripdata]
     );
     connection.release();
@@ -112,7 +111,6 @@ const getVehicleDetailsbyDeviceID = async (deviceID) => {
 // create trip summary
 const createTripSummary = async (tripSummaryData, vehicle_uuid) => {
   try {
-    console.log(tripSummaryData);
     const connection = await pool.getConnection();
     const [rows, fields] = await connection.query(
       "SELECT vehicle_uuid FROM trip_summary WHERE vehicle_uuid = ? AND trip_status = ?",
@@ -120,8 +118,9 @@ const createTripSummary = async (tripSummaryData, vehicle_uuid) => {
     );
     connection.release();
 
+    // Check if vehicle ID is exist
     if (rows.length > 0) {
-      console.log("Ongoing trip found. Trip will continue");
+      logger.info("Ongoing trip found. Trip will continue");
     } else {
       try {
         const insertConnection = await pool.getConnection();
@@ -131,7 +130,7 @@ const createTripSummary = async (tripSummaryData, vehicle_uuid) => {
         );
         insertConnection.release();
       } catch (error) {
-        console.log(`Error in creating trip summary ${error}`);
+        logger.error(`Error in creating trip summary ${error}`);
       }
     }
   } catch (error) {
