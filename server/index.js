@@ -1,12 +1,7 @@
 const logger = require("./logger");
 const express = require("express");
-// const pool = require("./config/db");
-const setupMQTT = require("./controllers/mqttHandler");
-const cors = require("cors");
-require("dotenv").config();
-
-const app = express();
-
+const pool = require("./config/db");
+// const setupMQTT = require("./controllers/mqttHandler");
 // Import all routes
 const { deviceRouter } = require("./routes/admin/deviceRoute");
 const { vehiclesRouter } = require("./routes/customer/vehiclesRoute");
@@ -16,10 +11,15 @@ const { customerRouter } = require("./routes/admin/usersRoute");
 const { loginRouter } = require("./routes/loginRoute");
 const { authentication } = require("./middleware/authentication");
 
-app.use(express.json());
-app.use(cors());
+const cors = require("cors");
+require("dotenv").config();
 
-const mqttClient = setupMQTT();
+const app = express();
+
+app.use(express.json());
+app.use(cors({ origin: "*" }));
+
+// const mqttClient = setupMQTT();
 
 // Login Routes
 app.use("/api", loginRouter);

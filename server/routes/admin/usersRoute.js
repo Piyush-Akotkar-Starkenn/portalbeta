@@ -11,6 +11,7 @@ customerRouter.post("/login", AdminController.Login);
 
 // Logout User Routes
 customerRouter.get("/logout", AdminController.Logout);
+
 // Get All User Routes
 customerRouter.get("/get-all-customer", AdminController.getCustomers);
 
@@ -18,9 +19,18 @@ customerRouter.get("/get-all-customer", AdminController.getCustomers);
 customerRouter.get("/get/:user_uuid", AdminController.GetCustomerById);
 
 // Update User Routes
-customerRouter.put("/update/:user_uuid", AdminController.updateCustomers);
+customerRouter.put(
+  "/update-customer/:user_uuid",
+  AdminController.updateCustomers
+);
 
 // Delete User Routes
-customerRouter.put("/delete/:user_uuid", AdminController.deleteCustomer);
+customerRouter.put(
+  "/delete-customer/:user_uuid",
+  AdminController.deleteCustomer
+);
+
+// Get total customers count [admin]
+customerRouter.get("/total-customers", AdminController.getTotalCustomers);
 
 module.exports = { customerRouter };

@@ -9,9 +9,6 @@ const jwt = require("jsonwebtoken");
 
 const app = express();
 
-// Generate a new UUID
-const user_uuid = uuidv4();
-
 // Configure body-parser middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -68,6 +65,7 @@ exports.Login = async (req, res) => {
 exports.Signup = async (req, res) => {
   try {
     const {
+      userUUID,
       first_name,
       last_name,
       email,
@@ -126,7 +124,10 @@ exports.Signup = async (req, res) => {
       .format("YYYY-MM-DD HH:mm:ss");
 
     const addQuery =
-      "INSERT INTO users(`user_uuid`,`first_name`,`last_name`,`email`,`password`,`user_type`,`company_name`,`address`,`state`,`city`,`pincode`,`phone`,`user_status`,`created_at`,`created_by`,`modified_at`,`modified_by`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+      "INSERT INTO users(`user_uuid`,`first_name`,`last_name`,`email`,`password`,`user_type`,`company_name`,`address`,`state`,`city`,`pincode`,`phone`,`user_status`,`created_at`,`created_by`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+    // Generate a new UUID
+    const user_uuid = uuidv4();
 
     const values = [
       user_uuid,
@@ -143,11 +144,10 @@ exports.Signup = async (req, res) => {
       phone,
       user_status,
       currentTimeIST,
-      null, // created_by, you can set it to null or provide an appropriate value
-      null, // modified_at, you can set it to null or provide an appropriate value
-      null, // modified_by, you can set it to null or provide an appropriate value
+      userUUID,
     ];
 
+    // console.log(values);
     const [results] = await connection.execute(addQuery, values);
 
     res.status(201).json({ message: "Customer Added Successfully!", results });
@@ -159,15 +159,15 @@ exports.Signup = async (req, res) => {
   }
 };
 
-// Get all customers details
+// Get all customers details [admin]
 exports.getCustomers = async (req, res) => {
   try {
     // Connection To the Database
     const connection = await pool.getConnection();
 
     const getQuery =
-      "SELECT * FROM users WHERE user_status = ? ORDER BY created_at DESC";
-    const [customers] = await connection.execute(getQuery, [1]);
+      "SELECT * FROM users WHERE user_status != ? AND user_type = ? ORDER BY user_id DESC";
+    const [customers] = await connection.execute(getQuery, [0, 2]);
 
     res
       .status(200)
@@ -196,6 +196,7 @@ exports.updateCustomers = async (req, res) => {
       pincode,
       phone,
       user_status,
+      userUUID,
     } = req.body;
 
     const { user_uuid } = req.params;
@@ -227,7 +228,7 @@ exports.updateCustomers = async (req, res) => {
       .format("YYYY-MM-DD HH:mm:ss");
 
     const updateQuery =
-      "UPDATE users SET first_name=?, last_name=?, email=?, company_name=?, address=?, state=?, city=?, pincode=?, phone=?,  modified_at=?, modified_by = ? WHERE user_uuid=?";
+      "UPDATE users SET first_name=?, last_name=?, email=?, company_name=?, address=?, state=?, city=?, pincode=?, phone=?, user_status=?, modified_at=?, modified_by = ? WHERE user_uuid=?";
     const values = [
       first_name,
       last_name,
@@ -238,9 +239,9 @@ exports.updateCustomers = async (req, res) => {
       city,
       pincode,
       phone,
-      //user_status ,
+      user_status,
       currentTimeIST,
-      user_uuid,
+      userUUID,
       user_uuid,
     ];
 
@@ -283,9 +284,8 @@ exports.GetCustomerById = async (req, res) => {
 exports.deleteCustomer = async (req, res) => {
   try {
     const { user_uuid } = req.params;
-
     //connection to database
-    const connection = await pool.connection();
+    const connection = await pool.getConnection();
 
     //creating current date and time
     let createdAt = new Date();
@@ -297,13 +297,13 @@ exports.deleteCustomer = async (req, res) => {
       "UPDATE users SET user_status=?, modified_at=?, modified_by=? WHERE user_uuid=?";
 
     const [results] = await connection.execute(deleteQuery, [
-      2,
+      0,
       currentTimeIST,
-      user_uuid,
+      req.body.userUUID,
       user_uuid,
     ]);
 
-    res.status(200).send({ message: "Customer deleted successfully", results });
+    res.status(200).send({ message: "Customer deleted successfully" });
 
     connection.release();
   } catch (err) {
@@ -332,5 +332,25 @@ exports.Logout = async (req, res) => {
   } catch (err) {
     logger.error("Logout error:", err);
     return res.status(500).json({ message: "Error in Logout" });
+  }
+};
+
+// Get total customers [admin]
+exports.getTotalCustomers = async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    const [result] = await pool.query(
+      "SELECT COUNT(*) AS count FROM users WHERE user_status != ? AND user_type != ?",
+      [0, 1]
+    );
+    res.status(200).json({
+      message: "Successfully fetched the total customers data",
+      result,
+    });
+  } catch (error) {
+    logger.error(`Unable of fetched the total customers data ${error}`);
+    res
+      .status(501)
+      .json({ message: "Unable to fetched the total customers data" });
   }
 };
